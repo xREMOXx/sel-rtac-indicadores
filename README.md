@@ -186,16 +186,20 @@ Chaves de interligação, bancos de capacitor e os disjuntores da subestação
 normalmente não têm nome no HMI, então esse é o comportamento esperado para
 eles.
 
+Se você já usa a pasta de produção descrita em "Colocar em produção", copie o
+arquivo pronto para lá também. Cada pasta lê o seu.
+
 ---
 
 ## Passo 7: colocar a marca da sua distribuidora
 
 Opcional. Duas coisas independentes:
 
-**Logo.** Salve um arquivo `logo.png` dentro da pasta `indicadores`. Ele é
-embutido na página, então a página continua funcionando sem buscar nada na
-internet. Sem esse arquivo, o painel sobe sem logo e sem ícone de aba, e o
-resto funciona igual.
+**Logo.** Salve um arquivo `logo.png` na mesma pasta de onde você roda o
+painel, ou seja, a pasta `indicadores` rodando pelo Python, e a pasta de
+produção rodando pelo executável. Ele é embutido na página, então a página
+continua funcionando sem buscar nada na internet. Sem esse arquivo, o painel
+sobe sem logo e sem ícone de aba, e o resto funciona igual.
 
 **Título da aba.** Adicione uma linha no seu `.env`:
 
@@ -263,9 +267,15 @@ BIND_HOST = "127.0.0.1"
 
 ---
 
-## Gerar o executável
+## Colocar em produção
 
-O `.spec` fica na **raiz do projeto**, um nível acima. Rode de lá:
+Os passos anteriores rodam o painel pelo Python, a partir do código. Para
+deixar rodando de verdade, o caminho é gerar um executável e montar uma pasta
+de produção separada.
+
+### 1. Gerar o executável
+
+O `.spec` fica na **raiz do projeto**, um nível acima desta pasta. Rode de lá:
 
 ```powershell
 py -m PyInstaller PainelAberturas.spec --noconfirm
@@ -273,19 +283,61 @@ py -m PyInstaller PainelAberturas.spec --noconfirm
 
 O executável sai em `dist\PainelAberturas.exe`.
 
-**Importante.** Os arquivos da sua instalação ficam **ao lado do executável**, e
-não dentro dele. Copie os três para a mesma pasta do `.exe`:
+### 2. Montar a pasta de produção
+
+Crie uma pasta separada, fora da árvore de desenvolvimento, e deixe dentro dela
+o executável junto dos arquivos da sua instalação:
 
 ```
-PainelAberturas.exe
-.env
-nomes_equipamento.json     (se você fez o Passo 6)
-logo.png                   (se você fez o Passo 7)
+C:\Users\<voce>\Desktop\PainelAberturas\
+    PainelAberturas.exe
+    .env
+    nomes_equipamento.json     (se você fez o Passo 6)
+    logo.png                   (se você fez o Passo 7)
+    painel_indicadores.log     (criado sozinho, veja o passo 3)
 ```
 
-O motivo: quando congelado pelo PyInstaller, o programa é extraído numa pasta
-temporária que some a cada execução. Ler os arquivos de lá deixaria você sem
-como trocar a senha ou o cadastro sem recompilar tudo.
+Essa pasta é autocontida. Ela não depende do código, nem do Python instalado,
+nem de nada que esteja na pasta do projeto. Mover a pasta inteira para outra
+máquina é o suficiente para o painel rodar lá.
+
+**Por que os arquivos ficam do lado de fora do executável.** Quando congelado
+pelo PyInstaller, o programa é extraído numa pasta temporária que some a cada
+execução. Se os arquivos fossem lidos de dentro dele, trocar a senha ou o
+cadastro exigiria recompilar tudo.
+
+### 3. Deixar rodando sozinho
+
+O script `instalar_servico.ps1`, na raiz do projeto, registra o painel como
+tarefa agendada. Ele sobe no boot, sem janela, sem ninguém logado, e reinicia
+sozinho se cair. Abra o PowerShell **como administrador** e rode:
+
+```powershell
+.\instalar_servico.ps1
+```
+
+Ele procura a pasta de produção em `%USERPROFILE%\Desktop\PainelAberturas`. Se
+a sua estiver em outro lugar, aponte:
+
+```powershell
+.\instalar_servico.ps1 -Pasta "D:\Paineis\PainelAberturas"
+```
+
+Antes de registrar, o script confere se o executável e o `.env` estão lá, e
+avisa em vez de registrar uma tarefa que iria falhar no boot.
+
+Para controlar depois:
+
+```powershell
+Stop-ScheduledTask       -TaskName PainelIndicadores   # para agora
+Start-ScheduledTask      -TaskName PainelIndicadores   # sobe de novo
+Disable-ScheduledTask    -TaskName PainelIndicadores   # nao sobe mais no boot
+Unregister-ScheduledTask -TaskName PainelIndicadores -Confirm:$false
+```
+
+Rodando como tarefa agendada não existe janela de console, então o log é o
+único lugar onde o detalhe de um erro da API aparece. Ele fica em
+`painel_indicadores.log`, dentro da pasta de produção.
 
 ---
 
@@ -299,7 +351,8 @@ como trocar a senha ou o cadastro sem recompilar tudo.
 | Equipamentos aparecem só com o código | `nomes_equipamento.json` não existe ou não tem aquele código | Passo 6 |
 | Página sem logo e sem ícone de aba | não existe `logo.png` na pasta | Passo 7 |
 | `localhost` funciona, outra máquina recusa | firewall ou perfil da placa | Passo 8 |
-| `.exe` fecha sozinho reclamando do `.env` | os arquivos não foram copiados para junto do executável | veja "Gerar o executável" |
+| `.exe` fecha sozinho reclamando do `.env` | os arquivos não foram copiados para junto do executável | veja "Colocar em produção" |
+| Tarefa agendada registrada mas o painel não responde | erro na subida, e sem console não aparece em lugar nenhum | leia o `painel_indicadores.log` na pasta de produção |
 | `Unable to find acceptable character detection dependency` | build do PyInstaller sem o `charset_normalizer` compilado | o `.spec` já resolve isso, use ele e não o modo `--onefile` na mão |
 
 ---
