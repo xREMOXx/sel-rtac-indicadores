@@ -1,0 +1,10 @@
+# Instale com:  py -m pip install -r requirements.txt
+#
+# requests e urllib3 falam com a API do RTAC.
+# python-dotenv le o .env.
+# beautifulsoup4 e usado pelo sel_rtac_scraper.py, na raiz do projeto, que este
+# painel importa. Sem ele o import falha antes de qualquer coisa rodar.
+requests
+urllib3
+python-dotenv
+beautifulsoup4

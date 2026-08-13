@@ -24,11 +24,11 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-# sel_rtac_scraper.py e o .env ficam na RAIZ do projeto, um nivel acima desta
-# pasta: sao compartilhados com os outros scripts (live_138kv, eventos_abertura),
-# entao nao tem copia deles aqui. O load_dotenv() do scraper procura o .env a
-# partir do diretorio dele, nao do diretorio atual, entao funciona rodando de
-# qualquer lugar.
+import dotenv
+
+# sel_rtac_scraper.py fica na RAIZ do projeto, um nivel acima desta pasta:
+# e compartilhado com os outros scripts (live_138kv, eventos_abertura), entao
+# nao tem copia dele aqui.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 import sel_rtac_scraper as s
 
@@ -40,6 +40,18 @@ log = logging.getLogger("historico_aberturas")
 # os arquivos de cada instalacao ficam ao lado do .exe, nao dentro dele.
 _BASE = (pathlib.Path(sys.executable).parent if getattr(sys, "frozen", False)
          else pathlib.Path(__file__).resolve().parent)
+
+# O load_dotenv() sem argumento do scraper resolve o .env a partir do
+# diretorio ATUAL, subindo. Roda a partir de outra pasta (ou como servico, onde
+# o diretorio atual e o system32) e ele nao acha nada: o load_config sai com
+# "Faltando no .env" e parece credencial errada, nao caminho errado. Apontar o
+# arquivo explicitamente tira a dependencia de onde o processo foi iniciado.
+# Aqui ao lado tem prioridade sobre a raiz, que e o .env compartilhado com os
+# outros scripts do projeto.
+for _env in (_BASE / ".env", _BASE.parent / ".env"):
+    if _env.is_file():
+        dotenv.load_dotenv(_env)
+        break
 
 PORT = 8422
 POLL_SECONDS = 60  # dado historico nao muda rapido, sem motivo pra bater toda hora
