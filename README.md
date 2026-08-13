@@ -285,11 +285,11 @@ O executável sai em `dist\PainelAberturas.exe`.
 
 ### 2. Montar a pasta de produção
 
-Crie uma pasta separada, fora da árvore de desenvolvimento, e deixe dentro dela
-o executável junto dos arquivos da sua instalação:
+Crie `C:\PainelAberturas` e deixe dentro dela o executável junto dos arquivos
+da sua instalação:
 
 ```
-C:\Users\<voce>\Desktop\PainelAberturas\
+C:\PainelAberturas\
     PainelAberturas.exe
     .env
     nomes_equipamento.json     (se você fez o Passo 6)
@@ -301,6 +301,12 @@ Essa pasta é autocontida. Ela não depende do código, nem do Python instalado,
 nem de nada que esteja na pasta do projeto. Mover a pasta inteira para outra
 máquina é o suficiente para o painel rodar lá.
 
+**Por que na raiz do disco e não no seu Desktop.** A tarefa agendada do passo 3
+roda como SYSTEM, no boot, sem ninguém logado. Uma pasta dentro do perfil de
+usuário some se o perfil for recriado, vai junto se o Desktop estiver
+redirecionado para o OneDrive, e é fácil de apagar sem querer numa faxina da
+área de trabalho. No nível da máquina nada disso acontece.
+
 **Por que os arquivos ficam do lado de fora do executável.** Quando congelado
 pelo PyInstaller, o programa é extraído numa pasta temporária que some a cada
 execução. Se os arquivos fossem lidos de dentro dele, trocar a senha ou o
@@ -308,23 +314,43 @@ cadastro exigiria recompilar tudo.
 
 ### 3. Deixar rodando sozinho
 
-O script `instalar_servico.ps1`, na raiz do projeto, registra o painel como
-tarefa agendada. Ele sobe no boot, sem janela, sem ninguém logado, e reinicia
-sozinho se cair. Abra o PowerShell **como administrador** e rode:
+O script `instalar_servico.ps1`, nesta mesma pasta do repositório, registra o
+painel como tarefa agendada. Ele sobe no boot, sem janela, sem ninguém logado,
+e reinicia sozinho se cair. Abra o PowerShell **como administrador** e rode:
 
 ```powershell
 .\instalar_servico.ps1
 ```
 
-Ele procura a pasta de produção em `%USERPROFILE%\Desktop\PainelAberturas`. Se
-a sua estiver em outro lugar, aponte:
+Se a sua pasta de produção estiver em outro lugar, aponte:
 
 ```powershell
 .\instalar_servico.ps1 -Pasta "D:\Paineis\PainelAberturas"
 ```
 
 Antes de registrar, o script confere se o executável e o `.env` estão lá, e
-avisa em vez de registrar uma tarefa que iria falhar no boot.
+avisa em vez de registrar uma tarefa que só iria falhar no boot.
+
+**Ele também restringe o acesso à pasta**, e isso é obrigatório. Qualquer pasta
+criada na raiz de `C:` nasce com leitura liberada para `BUILTIN\Usuários`, ou
+seja, qualquer conta local consegue abrir o `.env` e ler a senha do RTAC em
+texto puro. Dentro do perfil de usuário isso não acontecia, então a permissão
+tem que ser refeita à mão. O script deixa apenas SYSTEM, que é quem roda a
+tarefa, e Administradores.
+
+Se você precisa editar o `.env` sem elevação, informe a sua conta:
+
+```powershell
+.\instalar_servico.ps1 -Mantenedor "DOMINIO\seu.usuario"
+```
+
+Para conferir como ficou:
+
+```powershell
+icacls C:\PainelAberturas
+```
+
+`BUILTIN\Usuários` não pode aparecer na lista.
 
 Para controlar depois:
 
