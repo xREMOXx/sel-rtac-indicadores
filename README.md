@@ -368,6 +368,25 @@ precisam passar. Rode depois de qualquer alteração nessa parte do código.
 
 ---
 
+## Licença
+
+MIT. Veja o arquivo [LICENSE](LICENSE).
+
+Você pode usar, copiar, modificar e distribuir, inclusive comercialmente. A
+única exigência é manter o aviso de copyright e o texto da licença junto com o
+que você distribuir.
+
+Modificar é esperado, não tolerado. O painel foi feito para ser adaptado por
+instalação: cadastro de equipamentos, cores da marca, endereço de bind e regra
+de firewall são todos pontos de ajuste documentados aqui.
+
+As dependências não impõem nada além disso. `requests` é Apache-2.0, `urllib3`
+e `beautifulsoup4` são MIT, `python-dotenv` é BSD-3-Clause. O PyInstaller é
+GPLv2 ou posterior, mas com exceção explícita para o bootloader, que é o que
+permite distribuir o executável congelado sob a licença que você quiser.
+
+---
+
 ## Por que o código é assim
 
 Esta seção não tem passo a passo. Ela registra decisões que não são óbvias
