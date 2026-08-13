@@ -1,0 +1,16 @@
+{
+  "_comentario": [
+    "Copie este arquivo para nomes_equipamento.json e preencha com o SEU cadastro.",
+    "Chave = codigo do equipamento como aparece no INICIO do campo Category do",
+    "alarme (ex.: Category 'RL-01 RELIGADOR' -> chave 'RL-01').",
+    "Valor = apelido operacional que aparece no painel, normalmente o nome do",
+    "alimentador. Vem dos DiagramTitle do projeto de HMI, no formato",
+    "'RL-01 (5009) - NOME DO ALIMENTADOR'.",
+    "Equipamento que nao estiver aqui aparece so com o codigo. Nada quebra.",
+    "Esta chave _comentario e ignorada: nenhum Category comeca com underline."
+  ],
+
+  "RL-01": "NOME DO ALIMENTADOR",
+  "RL-02": "OUTRO ALIMENTADOR",
+  "DJ-01": "ENTRADA DA SUBESTACAO"
+}

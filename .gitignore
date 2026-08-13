@@ -1,0 +1,10 @@
+.claude/
+__pycache__/
+*.pyc
+build/
+dist/
+
+# Específicos de cada instalação — veja os .example / README
+.env
+nomes_equipamento.json
+logo.png
