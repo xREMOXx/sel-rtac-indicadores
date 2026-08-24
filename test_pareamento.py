@@ -74,6 +74,34 @@ def test_normalized_solto_nao_vira_par():
     assert h._pair_open_close([]) == []
 
 
+
+
+def test_offset_falso_do_rtac_e_descartado():
+    """O RTAC carimba hora local mas rotula "+00:00".
+
+    Confiar no rotulo faz o navegador subtrair o offset inteiro: num RTAC em
+    UTC-3, uma abertura das 20:59:41 aparece na tela como 17:59. Sem o rotulo,
+    new Date() le como hora local e mostra o que o RTAC quis dizer.
+    """
+    assert h._hora_local("2026-08-20T20:59:41.352000+00:00") == "2026-08-20T20:59:41.352000"
+    assert h._hora_local("2026-08-20T20:59:41Z") == "2026-08-20T20:59:41"
+    assert h._hora_local("2026-08-20T20:59:41-03:00") == "2026-08-20T20:59:41"
+    assert h._hora_local("2026-08-20T20:59:41") == "2026-08-20T20:59:41"
+    assert h._hora_local(None) is None
+
+
+def test_duracao_nao_muda_com_o_offset():
+    """A duracao e diferenca entre dois carimbos deslocados igualmente."""
+    import time
+    def segundos(a, b):
+        t0 = time.strptime(h._hora_local(a)[:19], "%Y-%m-%dT%H:%M:%S")
+        t1 = time.strptime(h._hora_local(b)[:19], "%Y-%m-%dT%H:%M:%S")
+        return int(time.mktime(t1) - time.mktime(t0))
+    com = segundos("2026-08-20T20:59:41+00:00", "2026-08-20T21:38:19+00:00")
+    sem = segundos("2026-08-20T20:59:41", "2026-08-20T21:38:19")
+    assert com == sem == 38 * 60 + 38, (com, sem)
+
+
 if __name__ == "__main__":
     testes = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in testes:

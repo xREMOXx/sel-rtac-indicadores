@@ -145,6 +145,35 @@ mata o painel.
 
 ---
 
+## Passo 5.1: conferir o fuso do carimbo de tempo
+
+Faça isto na primeira vez que subir o painel. É rápido e evita um erro que
+passa despercebido por semanas.
+
+Abra qualquer mês com ocorrências e compare a hora de uma abertura com a hora
+em que a operação abriu a ordem de falta de energia correspondente. Se bater,
+está certo e você não precisa mexer em nada.
+
+Se estiver deslocada exatamente pelo offset do seu fuso, por exemplo 3 horas
+no Brasil, o seu RTAC carimba a hora do próprio relógio mas rotula o campo
+como `+00:00`. O padrão do painel (`local`) já trata esse caso. Se o seu RTAC
+carimba UTC de verdade, ponha no `.env`:
+
+```
+PAINEL_CARIMBO_RTAC=utc
+```
+
+Para decidir sem depender de comparar com ordens, use os eventos
+`Acknowledged` do histórico de alarme. Reconhecer alarme é ação humana e segue
+expediente: se a distribuição por hora do carimbo cru concentra no horário
+comercial, o carimbo é local; se concentra deslocada pelo seu offset, é UTC.
+
+A **duração** até o restabelecimento está certa nos dois modos, por ser
+diferença entre dois carimbos deslocados igualmente. O que muda é só a hora
+exibida.
+
+---
+
 ## Passo 6: colocar os nomes dos alimentadores
 
 Opcional. Sem este passo, cada equipamento aparece só com o código, por exemplo

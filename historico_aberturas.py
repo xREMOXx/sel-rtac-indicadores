@@ -17,6 +17,7 @@ import base64
 import html
 import json
 import logging
+import re
 import os
 import pathlib
 import sys
@@ -165,6 +166,65 @@ def _paged_get(cfg, path, extra_filter=None):
     return items
 
 
+_OFFSET_FALSO = re.compile(r"(?:Z|[+-]\d\d:?\d\d)$")
+
+# Como interpretar o carimbo de tempo que a API do RTAC devolve.
+#
+#   local (padrao) -- o RTAC carimba a hora do relogio DELE, mas rotula o campo
+#                     como "+00:00", ou seja, declara UTC sem ser. O rotulo e
+#                     descartado e o carimbo vale como hora local.
+#   utc            -- o RTAC carimba UTC de verdade. O rotulo e mantido e o
+#                     navegador converte pro fuso de quem esta olhando.
+#
+# O padrao e "local" porque e o comportamento observado em campo, e porque
+# errar pra esse lado e visivel na hora: o horario bate com o relogio da
+# operacao. Com "utc" num RTAC que nao carimba UTC, todo evento aparece
+# deslocado pelo offset do fuso e ninguem percebe de imediato.
+#
+# Como descobrir qual e o seu, sem chutar: pegue no historico de alarme os
+# eventos "Acknowledged", que sao acao humana, e olhe a distribuicao por hora
+# do carimbo cru. Se a concentracao cair no horario de expediente, o carimbo e
+# local. Se cair deslocada pelo seu offset, e UTC de verdade.
+CARIMBO_RTAC = os.getenv("PAINEL_CARIMBO_RTAC", "local").strip().lower()
+if CARIMBO_RTAC not in ("local", "utc"):
+    log.warning("PAINEL_CARIMBO_RTAC=%r nao e 'local' nem 'utc'; usando 'local'",
+                CARIMBO_RTAC)
+    CARIMBO_RTAC = "local"
+
+
+def _hora_local(ts):
+    """Normaliza o carimbo do RTAC conforme PAINEL_CARIMBO_RTAC.
+
+    Com "local", tira o fuso declarado. Ele e falso: o RTAC escreve a hora do
+    proprio relogio e rotula "+00:00". Quem confia no rotulo e converte pro
+    fuso do navegador subtrai o offset inteiro -- num RTAC em UTC-3, um evento
+    das 20:59 aparece na tela como 17:59.
+
+    Duas evidencias que separam um caso do outro, colhidas do proprio dado:
+
+      * uma abertura pareada com a ordem de falta de energia que a operacao
+        abriu por causa dela, e com o "Acknowledged" do operador. Os tres
+        relogios batem no carimbo cru quando o carimbo e local;
+      * a distribuicao horaria dos "Acknowledged" da frota. Reconhecer alarme e
+        acao humana e segue expediente: se o pico cai de manha no carimbo cru,
+        o carimbo e local.
+
+    Tirar o rotulo deixa o painel coerente consigo mesmo: o agrupamento por
+    ano/mes/dia ja fatia a string crua, entao ja tratava o carimbo como local.
+    Sem isso, um evento de 01:30 era contado no dia certo pelo calendario e
+    exibido as 22:30 do dia anterior no detalhamento.
+
+    A duracao nao muda em nenhum dos dois modos, porque e diferenca entre dois
+    carimbos deslocados igualmente.
+
+    O certo mesmo e acertar o relogio do RTAC pra carimbar UTC de verdade, ou
+    declarar o offset correto, e entao usar "utc" aqui.
+    """
+    if not ts or CARIMBO_RTAC == "utc":
+        return ts
+    return _OFFSET_FALSO.sub("", ts)
+
+
 def _pair_open_close(historico: list) -> list:
     """Ordena por timestamp e pareia cada transicao real de abertura com o
     fechamento seguinte do mesmo tag.
@@ -232,8 +292,8 @@ def poll_loop(cfg: dict) -> None:
                     mes_node = ano_node["meses"].setdefault(mes, {"equipamentos": {}})
                     eq_list = mes_node["equipamentos"].setdefault(label, [])
                     eq_list.append({
-                        "abertura": pair["abertura"],
-                        "fechamento": pair["fechamento"],
+                        "abertura": _hora_local(pair["abertura"]),
+                        "fechamento": _hora_local(pair["fechamento"]),
                         "duracao_seg": duracao_seg,
                     })
             with state_lock:

@@ -149,8 +149,10 @@ def montar_estado(ano_final: int) -> dict:
             no_ano = anos.setdefault(par["abertura"][:4], {"meses": {}})
             no_mes = no_ano["meses"].setdefault(par["abertura"][:7], {"equipamentos": {}})
             no_mes["equipamentos"].setdefault(cat, []).append({
-                "abertura": par["abertura"],
-                "fechamento": par["fechamento"],
+                # mesmo tratamento do painel real: o gerador carimba
+                # "+00:00" igual ao RTAC, e o offset falso e descartado aqui
+                "abertura": h._hora_local(par["abertura"]),
+                "fechamento": h._hora_local(par["fechamento"]),
                 "duracao_seg": duracao,
             })
     log.info("%d equipamentos, %d aberturas, anos %s",
