@@ -26,11 +26,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import dotenv
 
-# sel_rtac_scraper.py fica na RAIZ do projeto, um nivel acima desta pasta:
-# e compartilhado com os outros scripts (live_138kv, eventos_abertura), entao
-# nao tem copia dele aqui.
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-import sel_rtac_scraper as s
+import requests
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("historico_aberturas")
@@ -48,10 +44,47 @@ _BASE = (pathlib.Path(sys.executable).parent if getattr(sys, "frozen", False)
 # arquivo explicitamente tira a dependencia de onde o processo foi iniciado.
 # Aqui ao lado tem prioridade sobre a raiz, que e o .env compartilhado com os
 # outros scripts do projeto.
-for _env in (_BASE / ".env", _BASE.parent / ".env"):
+_ENV_CANDIDATOS = (_BASE / ".env", _BASE.parent / ".env")
+for _env in _ENV_CANDIDATOS:
     if _env.is_file():
         dotenv.load_dotenv(_env)
         break
+
+# ---------------------------------------------------------------------------
+# Config e acesso a API. Autocontido de proposito: este painel nao importa nada
+# de fora da pasta, entao quem clonar o repositorio consegue rodar sem precisar
+# de outro projeto ao lado.
+# ---------------------------------------------------------------------------
+
+def load_config() -> dict:
+    faltando = [k for k in ("SEL_RTAC_HOST", "SEL_RTAC_USER", "SEL_RTAC_PASSWORD")
+                if not os.environ.get(k)]
+    if faltando:
+        log.error("Faltando no .env: %s", ", ".join(faltando))
+        log.error("Procurei .env em: %s",
+                  " | ".join(str(c) for c in _ENV_CANDIDATOS))
+        sys.exit(1)
+    scheme = os.environ.get("SEL_RTAC_SCHEME", "https")
+    return {
+        "base_url": f"{scheme}://{os.environ['SEL_RTAC_HOST']}",
+        "verify_tls": os.environ.get("SEL_RTAC_VERIFY_TLS", "false").lower() == "true",
+        "user": os.environ["SEL_RTAC_USER"],
+        "password": os.environ["SEL_RTAC_PASSWORD"],
+    }
+
+
+def api_get(cfg: dict, path: str, params: dict | None = None) -> requests.Response:
+    """GET autenticado na API do RTAC. O painel nunca faz outro verbo."""
+    r = requests.get(
+        cfg["base_url"] + path,
+        params=params,
+        auth=(cfg["user"], cfg["password"]),
+        verify=cfg["verify_tls"],
+        timeout=20,
+    )
+    r.raise_for_status()
+    return r
+
 
 PORT = 8422
 POLL_SECONDS = 60  # dado historico nao muda rapido, sem motivo pra bater toda hora
@@ -122,7 +155,7 @@ def _paged_get(cfg, path, extra_filter=None):
         params = {"offset": offset, "limit": 200}
         if extra_filter:
             params["filter"] = extra_filter
-        r = s.api_get(cfg, path, params=params)
+        r = api_get(cfg, path, params=params)
         page = r.json()
         items.extend(page)
         total = int(r.headers.get("Pagination-Total", len(items)))
@@ -965,7 +998,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> None:
-    cfg = s.load_config()
+    cfg = load_config()
     if not cfg["verify_tls"]:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)

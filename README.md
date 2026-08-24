@@ -80,7 +80,8 @@ Abra o PowerShell **na pasta `indicadores`** e rode:
 py -m pip install -r requirements.txt
 ```
 
-Isso instala `requests`, `urllib3`, `python-dotenv` e `beautifulsoup4`.
+Isso instala `requests`, `urllib3` e `python-dotenv`. O painel é autocontido:
+não importa nada de fora desta pasta.
 
 ---
 
@@ -407,7 +408,7 @@ instalação: cadastro de equipamentos, cores da marca, endereço de bind e regr
 de firewall são todos pontos de ajuste documentados aqui.
 
 As dependências não impõem nada além disso. `requests` é Apache-2.0, `urllib3`
-e `beautifulsoup4` são MIT, `python-dotenv` é BSD-3-Clause. O PyInstaller é
+são MIT, `python-dotenv` é BSD-3-Clause. O PyInstaller é
 GPLv2 ou posterior, mas com exceção explícita para o bootloader, que é o que
 permite distribuir o executável congelado sob a licença que você quiser.
 
