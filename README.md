@@ -108,6 +108,11 @@ Preencha três campos, no mínimo:
 Os outros campos já vêm com valor que funciona na maioria das instalações. O
 próprio `.env.example` explica cada um, caso precise mexer.
 
+Um deles merece atenção: `PAINEL_CARIMBO_RTAC`, que diz como interpretar o
+relógio do seu RTAC. O padrão funciona na maioria dos casos, mas quando não
+funciona o painel não acusa erro nenhum: ele simplesmente mostra todos os
+horários deslocados. O Passo 5.1 tem a conferência, que leva um minuto.
+
 Salve e feche o Notepad.
 
 ---
@@ -145,7 +150,7 @@ mata o painel.
 
 ---
 
-## Passo 5.1: conferir o fuso do carimbo de tempo
+## Passo 5.1: conferir se o horário está certo
 
 Faça isto na primeira vez que subir o painel. É rápido e evita um erro que
 passa despercebido por semanas.
@@ -404,6 +409,7 @@ Rodando como tarefa agendada não existe janela de console, então o log é o
 | `Faltando no .env: SEL_RTAC_HOST, ...` | o `.env` não existe ou está incompleto | refaça o Passo 3 |
 | Toda requisição volta `401` | conta com papel `File Transfer`, que não tem `API_Login` | refaça o Passo 1 |
 | Painel abre mas mostra erro de conexão | RTAC inalcançável desta máquina | rode o `Test-NetConnection` do item 2 de "Antes de começar" |
+| Hora do evento não bate com a hora real, sempre pela mesma diferença | `PAINEL_CARIMBO_RTAC` no modo errado para o seu RTAC | Passo 5.1 |
 | Equipamentos aparecem só com o código | `nomes_equipamento.json` não existe ou não tem aquele código | Passo 6 |
 | Página sem logo e sem ícone de aba | não existe `logo.png` na pasta | Passo 7 |
 | `localhost` funciona, outra máquina recusa | firewall ou perfil da placa | Passo 8 |
